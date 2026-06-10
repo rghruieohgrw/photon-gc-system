@@ -1,8 +1,5 @@
--- setgc.lua
 local SIGNATURE_BASE = "https://raw.githubusercontent.com/rghruieohgrw/photon-signatures/main/"
-
 local signatures = {}
-local cache = {}
 
 function load_signatures()
     local place_id = get_placeid()
@@ -11,9 +8,7 @@ function load_signatures()
     http.get(url, function(body, status)
         if status == 200 then
             signatures = JSON_to_table(body)
-            print("[GC] Loaded: " .. signatures.game_name)
-        else
-            print("[GC] Failed - status: " .. status)
+            print("[GC] Loaded: " .. (signatures.game_name or "Unknown"))
         end
     end)
 end
@@ -57,19 +52,38 @@ function write_property(category, prop, value)
     return false
 end
 
-function setgc(changes)
-    for category, props in pairs(changes) do
-        for prop, value in pairs(props) do
+-- NEW: Simple string syntax
+function setgc(prop, value)
+    -- If first arg is table, use old behavior
+    if type(prop) == "table" then
+        for category, props in pairs(prop) do
+            for p, v in pairs(props) do
+                write_property(category, p, v)
+            end
+        end
+    else
+        -- Simple mode: auto-detect category
+        local category = nil
+        if signatures.weapon and signatures.weapon[prop] then
+            category = "weapon"
+        elseif signatures.humanoid and signatures.humanoid[prop] then
+            category = "humanoid"
+        else
+            -- Search both categories
+            for cat, props in pairs(signatures) do
+                if props and props[prop] then
+                    category = cat
+                    break
+                end
+            end
+        end
+        
+        if category then
             write_property(category, prop, value)
+        else
+            print("[GC] Property not found: " .. prop)
         end
     end
 end
 
--- Load on startup
 load_signatures()
-
--- Example usage (uncomment to test):
--- setgc({
---     weapon = { FireRate = 0, MagAmmo = 999999 },
---     humanoid = { Walkspeed = 250, JumpPower = 200 }
--- })
