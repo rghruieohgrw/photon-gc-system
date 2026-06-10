@@ -52,9 +52,7 @@ function write_property(category, prop, value)
     return false
 end
 
--- NEW: Simple string syntax
 function setgc(prop, value)
-    -- If first arg is table, use old behavior
     if type(prop) == "table" then
         for category, props in pairs(prop) do
             for p, v in pairs(props) do
@@ -62,14 +60,12 @@ function setgc(prop, value)
             end
         end
     else
-        -- Simple mode: auto-detect category
         local category = nil
         if signatures.weapon and signatures.weapon[prop] then
             category = "weapon"
         elseif signatures.humanoid and signatures.humanoid[prop] then
             category = "humanoid"
         else
-            -- Search both categories
             for cat, props in pairs(signatures) do
                 if props and props[prop] then
                     category = cat
